@@ -14,12 +14,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/etOrigin"
+        android:imeOptions="actionNext"
+        android:maxLines="1"
         android:hint="Enter From address" />
 
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Enter To address"
+        android:imeOptions="actionDone"
         android:id="@+id/etDestination" />
 
     <LinearLayout

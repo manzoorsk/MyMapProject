@@ -4,8 +4,12 @@ import android.Manifest;
 import android.app.ActionBar;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -15,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -22,6 +27,10 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -42,7 +51,7 @@ import Modules.DirectionFinder;
 import Modules.DirectionFinderListener;
 import Modules.Route;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, DirectionFinderListener {
+public class MapsActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback, DirectionFinderListener {
 
     private GoogleMap mMap;
     private Button btnFindPath,play_btn,restart_btn;
@@ -51,8 +60,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<Marker> destinationMarkers = new ArrayList<>();
     private List<Polyline> polylinePaths = new ArrayList<>();
     private ProgressDialog progressDialog;
-
-
+    private Context context=this;
+    private GoogleApiClient mGoogleApiClient;
+    private Location mLocation;
+    private LocationRequest mLocationRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +79,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         btnFindPath.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                InputMethodManager inputManager = (InputMethodManager)
+                        getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
+                        InputMethodManager.HIDE_NOT_ALWAYS);
                 sendRequest();
             }
         });
@@ -106,7 +121,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         try {
-            new DirectionFinder(this, origin, destination).execute();
+            new DirectionFinder(this, origin, destination,context).execute();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -144,13 +159,50 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        LatLng loc = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+            mMap.clear();
+        if (mMap != null) {
+            mMap.addMarker(new MarkerOptions().position(loc)).setVisible(true);
+
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 15));
+        }
+    }
+
+    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        LatLng nyleTech = new LatLng(17.416353, 78.448047);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(nyleTech, 15));
+        LatLng currentLocation = new LatLng(17.416353, 78.448047);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
         originMarkers.add(mMap.addMarker(new MarkerOptions()
-                .title("Nyletech Solutions")
-                .position(nyleTech)));
+                .title("Current Location")
+                .position(currentLocation)));
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -164,6 +216,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         mMap.setMyLocationEnabled(true);
     }
+
 
 
     @Override

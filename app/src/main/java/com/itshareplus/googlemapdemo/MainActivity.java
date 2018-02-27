@@ -312,7 +312,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 @Override
                 public void onMarkerDragEnd(Marker marker) {
-
+                    TextView text = (TextView) findViewById(R.id.text_view);
                     Geocoder geocoder=new Geocoder(MainActivity.this);
                     LatLng ll=marker.getPosition();
                     double lat=ll.latitude;
@@ -324,6 +324,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         e.printStackTrace();
                     }
                     Address address=list.get(0);
+                    text.setText(address.getAddressLine(0)+","+
+                            address.getSubLocality()+","+
+                            address.getLocality()+","+
+                            address.getAdminArea()+","+
+                            address.getCountryName()+","+
+                            address.getPostalCode()+","+
+                            "\n " + marker);
                     marker.setTitle(address.getLocality());
                     marker.showInfoWindow();
                 }
@@ -346,7 +353,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     locality_tv.setText(marker.getTitle());
                     lat_tv.setText("Latitude" +ll.latitude);
                     lng_tv.setText("Longitude" +ll.longitude);
-                    snippet_tv.setText(marker.getSnippet());
+//                    snippet_tv.setText(marker.getSnippet());
                     return view;
                 }
             });
